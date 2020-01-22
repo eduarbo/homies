@@ -32,43 +32,69 @@ const remap = (fromKey, toKey, options) => ({
   ...options,
 });
 
-const sticky = (fromKey, layer, options) => ({
+const remap2 = (fromKey, toKey, { layer, ...options } = {}) => ({
+  description: `${keyToString(fromKey)} to ${keyToString(...toKey)}`,
   type: 'basic',
   from: from(...fromKey),
-  to: {
-    set_variable: {
-      name: layer,
-      value: 1,
-    },
-  },
-  to_after_key_up: [
-    {
-      set_variable: {
-        name: layer,
-        value: 0,
-      },
-    },
+  // to: to(toKey),
+  to: [
+    ...to(toKey),
+    ...(layer ? [{
+      to_after_key_up: [
+        {
+          set_variable: {
+            name: layer,
+            value: 0,
+          },
+        },
+      ],
+    }] : []),
   ],
-  // to_delayed_action: {
-  //   to_if_invoked: [
-  //     {
-  //       set_variable: {
-  //         name: layer,
-  //         value: 0,
-  //       },
-  //     },
-  //   ],
-  //   // to_if_canceled: [
-  //   //   {
-  //   //     set_variable: {
-  //   //       name: layer,
-  //   //       value: 1,
-  //   //     },
-  //   //   },
-  //   // ],
-  // },
+  // ...(layer && {
+  //   conditions: [{
+  //     type: 'variable_if',
+  //     name: layer,
+  //     value: 1,
+  //   }],
+  // }),
   ...options,
 });
+
+const remapSticky = (sticky, fromKey, toKey, options = {}) => {
+  const { to: remapTo, ...remapProps } = remap(fromKey, toKey);
+
+  return {
+    ...remapProps,
+    to: [
+      {
+        set_variable: {
+          name: sticky,
+          value: 1,
+        },
+      },
+      ...remapTo,
+    ],
+    to_delayed_action: {
+      to_if_invoked: [
+        {
+          set_variable: {
+            name: sticky,
+            value: 0,
+          },
+        },
+      ],
+      to_if_canceled: [
+        {
+          set_variable: {
+            name: sticky,
+            value: 1,
+          },
+        },
+      ],
+    },
+    ...options,
+  };
+};
 
 const modTap = (fromKey, toKey, toKeyOnTap, options) => ({
   ...remap(fromKey, toKey, options),
@@ -113,6 +139,7 @@ module.exports = {
   modTap,
   profile,
   remap,
-  sticky,
+  remap2,
+  remapSticky,
   to,
 };
